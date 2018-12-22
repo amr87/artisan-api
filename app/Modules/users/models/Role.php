@@ -3,15 +3,14 @@
 namespace App\Modules\users\models;
 
 use Illuminate\Database\Eloquent\Model;
-
 use App\Modules\users\Contracts\AccessInterface;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Role extends Model implements AccessInterface {
-    
+
     use SoftDeletes;
 
-    protected $fillable = ['name', 'label'];
+    protected $fillable = ['company_id','name', 'label'];
 
     public function permissions() {
 
@@ -46,6 +45,10 @@ class Role extends Model implements AccessInterface {
             }
             return $this->permissions()->sync($sync);
         }
+    }
+
+    public function whereTenant() {
+        return $this->where('company_id', Session::get('company_id'));
     }
 
 }

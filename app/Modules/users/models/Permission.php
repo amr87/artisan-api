@@ -7,15 +7,14 @@ use App\Modules\users\Contracts\AccessInterface;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Permission extends Model implements AccessInterface {
-    
+
     use SoftDeletes;
 
-    protected $fillable = ['name', 'label'];
+    protected $fillable = ['company_id','name', 'label'];
 
     public function role() {
-        
+
         return $this->belongsToMany(Role::class);
-        
     }
 
     public static function findByLabel($permission) {
@@ -30,6 +29,10 @@ class Permission extends Model implements AccessInterface {
         $permission = self::where('name', '=', $permission)->get();
 
         return !empty($permission->toArray()) ? $permission[0] : false;
+    }
+
+    public function whereTenant() {
+        return $this->where('company_id', Session::get('company_id'));
     }
 
 }

@@ -5,15 +5,15 @@ namespace App\Modules\users\Repositories;
 use Illuminate\Support\Facades\Input as Input;
 use \App\Modules\users\models\User as User;
 use \App\Modules\users\models\Role as Role;
+use App\Modules\companies\models\Company as Company;
 use Illuminate\Support\Facades\DB as DB;
 use Illuminate\Support\Facades\Mail as Mail;
 use App\Modules\Helpers\AbstractRepository;
 use Yajra\Datatables\Datatables;
 
-
 class UserRepository extends AbstractRepository {
 
-    private static $relations = ['roles.permissions'];//,'conversations.messages'];
+    private static $relations = ['roles.permissions']; //,'conversations.messages'];
     private static $AVATARS_DIR = "/media/users-avatars/";
     private static $IMG_WIDTH = 780; /* @todo Convert it to an option */
     private static $PAGINATOR = 20;   /* @todo Convert it to an option */
@@ -21,7 +21,9 @@ class UserRepository extends AbstractRepository {
 
     public static function all() {
 
-        $users = User::with(self::$relations)->paginate(self::$PAGINATOR);
+        $users = \Session::get('company_id') != NULL ?
+                User::with(self::$relations)->where('company_id', \Session::get('company_id'))->paginate(self::$PAGINATOR) :
+                User::with(self::$relations)->paginate(self::$PAGINATOR);
 
         return !empty($users->toArray()) ? $users : array("errors" => true, "messages" => ['No Users Found']);
     }
@@ -31,18 +33,29 @@ class UserRepository extends AbstractRepository {
         $role = Input::get('role');
 
         if ($role !== Null && $role != 0) {
-
-            $users = User
-                    ::leftJoin('role_user', 'role_user.user_id', '=', 'users.id')
-                    ->whereRaw('role_user.role_id = ?', [$role])
-                    ->select('*')
-                    ->orderBy('users.id', 'ASC');
+            if (\Session::get('company_id') != NULL) {
+                $users = User
+                        ::leftJoin('role_user', 'role_user.user_id', '=', 'users.id')
+                        ->whereRaw('role_user.role_id = ?', [$role])
+                        ->where('company_id', \Session::get('company_id'))
+                        ->select('*')
+                        ->orderBy('users.id', 'ASC');
+            } else {
+                $users = User
+                        ::leftJoin('role_user', 'role_user.user_id', '=', 'users.id')
+                        ->whereRaw('role_user.role_id = ?', [$role])
+                        ->select('*')
+                        ->orderBy('users.id', 'ASC');
+            }
         } else {
 
-            $users = User::select('*')->orderBy('id', 'ASC');
+            $users = (\Session::get('company_id') != NULL) ? User::where('company_id', \Session::get('company_id'))->select('*')->orderBy('id', 'ASC') : User::select('*')->orderBy('id', 'ASC');
         }
 
         return Datatables::of($users)
+                        ->editColumn('company_id', function ($user) {
+                            return $user->company_id != NULL ? Company::find($user->company_id)->name : "";
+                        })
                         ->editColumn('created_at', function ($user) {
                             return $user->created_at ? with(new \Carbon\Carbon($user->created_at))->diffForHumans() : '';
                         })
@@ -82,16 +95,25 @@ class UserRepository extends AbstractRepository {
         $role = Input::get('role');
 
         if ($role !== Null && $role != 0) {
-
-            $users = User::onlyTrashed()
-                    ->leftJoin('role_user', 'role_user.user_id', '=', 'users.id')
-                    ->whereRaw('role_user.role_id = ?', [$role])
-                    ->whereNotNull('deleted_at')
-                    ->select('*')
-                    ->orderBy('users.id', 'ASC');
+            if (\Session::get('company_id') != NULL) {
+                $users = User::onlyTrashed()
+                        ->leftJoin('role_user', 'role_user.user_id', '=', 'users.id')
+                        ->whereRaw('role_user.role_id = ?', [$role])
+                        ->where('company_id', \Session::get('company_id'))
+                        ->whereNotNull('deleted_at')
+                        ->select('*')
+                        ->orderBy('users.id', 'ASC');
+            } else {
+                $users = User::onlyTrashed()
+                        ->leftJoin('role_user', 'role_user.user_id', '=', 'users.id')
+                        ->whereRaw('role_user.role_id = ?', [$role])
+                        ->whereNotNull('deleted_at')
+                        ->select('*')
+                        ->orderBy('users.id', 'ASC');
+            }
         } else {
 
-            $users = User::onlyTrashed()->select('*')->orderBy('id', 'ASC');
+            $users = \Session::get('company_id') != NULL ? User::onlyTrashed()->where('company_id', \Session::get('company_id'))->select('*')->orderBy('id', 'ASC') : User::onlyTrashed()->select('*')->orderBy('id', 'ASC');
         }
 
         return Datatables::of($users)
@@ -124,10 +146,13 @@ class UserRepository extends AbstractRepository {
     public static function search() {
 
         $keyword = Input::get('keyword');
-
-        $users = User::where('username', 'like', "%$keyword%")->whereNull('deleted_at')->where('id', '<>', '1')->select(['id', 'username'])->get();
-        $count = User::where('username', 'like', "%$keyword%")->whereNull('deleted_at')->where('id', '<>', '1')->count();
-
+        if (\Session::get('company_id') != NULL) {
+            $users = User::where('username', 'like', "%$keyword%")->where('company_id', \Session::get('company_id'))->whereNull('deleted_at')->where('id', '<>', '1')->select(['id', 'username'])->get();
+            $count = User::where('username', 'like', "%$keyword%")->where('company_id', \Session::get('company_id'))->whereNull('deleted_at')->where('id', '<>', '1')->count();
+        } else {
+            $users = User::where('username', 'like', "%$keyword%")->whereNull('deleted_at')->where('id', '<>', '1')->select(['id', 'username'])->get();
+            $count = User::where('username', 'like', "%$keyword%")->whereNull('deleted_at')->where('id', '<>', '1')->count();
+        }
         return !empty($users->toArray()) ? [
             'items' => $users,
             'total_count' => $count,
@@ -159,6 +184,7 @@ class UserRepository extends AbstractRepository {
         $role = Input::get('role');
 
         $user = User::create([
+                    "company_id" => \Session::get('company_id'),
                     "username" => Input::get('username'),
                     "email" => Input::get('email'),
                     "password" => bcrypt(Input::get('password')),
@@ -198,13 +224,13 @@ class UserRepository extends AbstractRepository {
                     $user->grantRole($role);
                 }
             }
-            
+
             /* create workshop 
-             
+
              *  call workshopController@create($user)
              */
-            
-            
+
+
             return $user;
         } else {
             return ["errors" => true, "messages" => ['could not create user']];
@@ -233,7 +259,6 @@ class UserRepository extends AbstractRepository {
         }
         if (!is_null(Input::get('password'))) {
             $validator = \Validator::make(Input::all(), [
-
                         'password' => 'min:6',
             ]);
 
@@ -247,7 +272,6 @@ class UserRepository extends AbstractRepository {
         }
         if (!is_null(Input::get('email'))) {
             $validator = \Validator::make(Input::all(), [
-
                         'email' => 'email|min:6|max:255',
             ]);
 
@@ -371,14 +395,13 @@ class UserRepository extends AbstractRepository {
         if (empty(trim($id)))
             return array("errors" => true, "messages" => ['You must provide id']);
 
-        $user = User::with(['roles.permissions'])->find($id);
+        $user = User::with(['roles.permissions','company'])->find($id);
 
         return $user;
     }
 
     public static function login() {
         $validator = \Validator::make(Input::all(), [
-
                     'username' => 'required|min:3|max:255',
                     'password' => 'required|min:6',
         ]);
@@ -460,21 +483,21 @@ class UserRepository extends AbstractRepository {
             'created_at' => \Carbon\Carbon::now(new \DateTimeZone('Africa/Cairo'))
         ]);
 
-        if ($passwordReset) {
+        if ($passwordReset) { 
             // send email
             $sent = Mail::send('emails.reset-password', [
                         'name' => $user->username,
                         'token' => $token,
                         'email' => $user->email]
                             , function ($m) use ($user) {
-
-                        $m->from('support@artisan.com', 'Artisan Application');
-                        $m->to($user->email, $user->username)->subject('Reset Your Password ');
+                                    $m->from('support@artisan.com', 'Artisan Application');
+                                    $m->to($user->email, $user->username)->subject('Reset Your Password ');
                     });
-
+          
             if ($sent) {
 
                 return true;
+                
             } else {
 
                 return array("errors" => true, "messages" => ["could not send the email , please try again"]);
@@ -557,6 +580,7 @@ class UserRepository extends AbstractRepository {
             // create new user
 
             $user = User::create([
+                        'company_id'=> '123409',
                         'username' => Input::get('email'),
                         'email' => Input::get('email'),
                         'password' => \Hash::make(\Illuminate\Support\Str::random(20)),

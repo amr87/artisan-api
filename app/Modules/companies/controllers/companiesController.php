@@ -8,6 +8,13 @@ use \App\Modules\companies\models\Company as Company;
 
 class companiesController extends Controller {
 
+    public function _dataTables() {
+
+        $dataTable = CompanyRepository::DataTable();
+
+        return $dataTable;
+    }
+
     /**
      * @author Amr Gamal <amr.gamal878@gmail.com>
      * @since 1.0
@@ -17,14 +24,13 @@ class companiesController extends Controller {
      */
     public function _create() {
 
-        $conversation = CompanyRepository::create();
+        $company = CompanyRepository::create();
 
-        return !array_key_exists('errors', $conversation) ?
-                \Response::Json($conversation, 201) :
-                \Response::Json(['messages' => $conversation['messages']], 400);
+        return !array_key_exists('errors', $company) ?
+                \Response::Json($company, 201) :
+                \Response::Json(['messages' => $company['messages']], 400);
     }
 
-   
     /**
      * @author Amr Gamal <amr.gamal878@gmail.com>
      * @since 1.0
@@ -32,6 +38,14 @@ class companiesController extends Controller {
      * @return void
      *
      */
+    public function _update($id) {
+
+        $deleted = CompanyRepository::update($id);
+
+        return !array_key_exists('errors', $deleted) ?
+                \Response::Json($deleted, 200) :
+                \Response::Json(['messages' => $deleted['messages']], 404);
+    }
     public function _delete($id) {
 
         $deleted = CompanyRepository::delete($id);
@@ -40,25 +54,24 @@ class companiesController extends Controller {
                 \Response::Json($deleted, 200) :
                 \Response::Json(['messages' => $deleted['messages']], 404);
     }
-    
-   
-    
+
     public function _show($id) {
 
-        $conversation = CompanyRepository::show($id);
+        $company = CompanyRepository::show($id);
 
-        return !array_key_exists('errors', $conversation) ?
-                \Response::Json($conversation, 200) :
-                \Response::Json(['messages' => $conversation['messages']]);
+        return !array_key_exists('errors', $company) ?
+                \Response::Json($company, 200) :
+                \Response::Json(['messages' => $company['messages']]);
     }
-    
-    public function _getUserConversations($id) {
 
-        $conversation = CompanyRepository::profile($id);
+    public function _restore($id) {
 
-        return !array_key_exists('errors', $conversation) ?
-                \Response::Json($conversation, 200) :
-                \Response::Json(['messages' => $conversation['messages']],404);
+        $company = CompanyRepository::restore($id);
+
+        return !array_key_exists('errors', $company) ?
+                \Response::Json($company, 200) :
+                \Response::Json(['messages' => $company['messages']]);
     }
+
 
 }

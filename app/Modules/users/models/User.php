@@ -23,7 +23,7 @@ class User extends Model {
      *
      * @var array
      */
-    protected $fillable = ['username', 'email', 'password', 'bio', 'token', 'avatar', 'display_name', 'phone', 'social', 'remember_token'];
+    protected $fillable = ['company_id','username', 'email', 'password', 'bio', 'token', 'avatar', 'display_name', 'phone', 'social', 'remember_token'];
 
     /**
      * The attributes excluded from the model's JSON form.
@@ -65,5 +65,8 @@ class User extends Model {
         }
         return false;
     }
+    
+    
+  
 
 }

@@ -14,11 +14,11 @@ class ModifyUsersTable extends Migration {
         Schema::table('users', function (Blueprint $table) {
 
             $table->enum('type', ['0', '1'])->default('0');
-            $table->integer('company_id')->after('id')->unsigned();
-            $table->foreign('company_id')
-                    ->references('id')
-                    ->on('companies')
-                    ->onDelete('cascade');
+            $table->integer('company_id')->after('id')->nullable();
+//            $table->foreign('company_id')
+//                    ->references('id')
+//                    ->on('companies')
+//                    ->onDelete('cascade');
         });
     }
 

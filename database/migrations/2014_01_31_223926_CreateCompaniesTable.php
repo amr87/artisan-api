@@ -21,8 +21,8 @@ class CreateCompaniesTable extends Migration {
             $table->string('address');
             $table->string('phone');
             $table->string('logo')->nullable();
-            $table->decimal('latitude')->nullable();
-            $table->decimal('longitude')->nullable();
+            $table->decimal('latitude',10,5)->nullable();
+            $table->decimal('longitude',10,5)->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

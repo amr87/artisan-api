@@ -11,8 +11,9 @@ class PermissionRepository {
     private static $relations = ['role.user'];
 
     public static function DataTable() {
-
-        $permissions = Permission::where('id', '<>', 1)->select('*')->orderBy('id', 'ASC');
+        $permissions = \Session::get('company_id') != NULL ?
+                Permission::with(self::$relations)->where('company_id', \Session::get('company_id'))->where('id', '<>', 1)->select('*')->orderBy('id', 'ASC') :
+                Permission::with(self::$relations)->where('id', '<>', 1)->select('*')->orderBy('id', 'ASC');
 
         return Datatables::of($permissions)
                         ->editColumn('created_at', function ($permission) {
@@ -45,6 +46,7 @@ class PermissionRepository {
         $permissionLabel = strtolower(str_replace(" ", "_", Input::get('name')));
 
         $permission = Permission::create([
+                    "company_id" => \Session::get('company_id'),
                     "name" => $permissionLabel,
                     "label" => Input::get('name')
         ]);
@@ -141,11 +143,27 @@ class PermissionRepository {
 
     public static function all() {
 
-        $noAdmin = Input::get('noAdmin');
+     
+        
+         $noAdmin = Input::get('noAdmin');
 
-        $permissions = ($noAdmin != NULL && $noAdmin == true) ?
-                Permission::where('name', '<>', 'manage_users')->get() :
-                Permission::all();
+        if ($noAdmin != NULL && $noAdmin == true) {
+            
+            if (\Session::get('company_id') != NULL) {
+                
+                $permissions = Permission::with(self::$relations)->where('company_id', \Session::get('company_id'))->where('id', '<>', 1)->get();
+                
+            } else {
+                
+                $permissions = Permission::with(self::$relations)->where('id', '<>', 1)->get();
+                
+            }
+        } else {
+          
+            $permissions = \Session::get('company_id') != NULL ? Permission::with(self::$relations)->where('company_id', \Session::get('company_id'))->get() : Permission::with(self::$relations)->get();
+        }
+
+        
 
         return !empty($permissions->toArray()) ? $permissions : array("errors" => true, "messages" => ['No Permissions Found']);
     }

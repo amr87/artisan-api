@@ -8,12 +8,14 @@ use Yajra\Datatables\Datatables as DataTables;
 
 class RoleRepository {
 
-    private static $relations = ['permissions','user'];
+    private static $relations = ['permissions', 'user'];
 
     public static function DataTable() {
 
 
-        $roles = Role::with(self::$relations)->where('id', '<>', 1)->select('*')->orderBy('id', 'ASC');
+        $roles = \Session::get('company_id') != NULL ?
+                Role::with(self::$relations)->where('company_id', \Session::get('company_id'))->where('id', '<>', 1)->select('*')->orderBy('id', 'ASC') :
+                Role::with(self::$relations)->where('id', '<>', 1)->select('*')->orderBy('id', 'ASC');
 
         return Datatables::of($roles)
                         ->editColumn('created_at', function ($role) {
@@ -57,6 +59,7 @@ class RoleRepository {
         $roleLabel = strtolower(str_replace(" ", "_", Input::get('name')));
 
         $role = Role::create([
+                    "company_id" => \Session::get('company_id'),
                     "name" => $roleLabel,
                     "label" => Input::get('name')
         ]);
@@ -107,7 +110,7 @@ class RoleRepository {
 
                 $permissions = Input::get('permissions');
                 $users = Input::get('users');
-                
+
                 if (!is_null($permissions)) {
                     $role->permissions()->sync($permissions);
                 }
@@ -156,10 +159,21 @@ class RoleRepository {
 
         $noAdmin = Input::get('noAdmin');
 
-        $roles = ($noAdmin != NULL && $noAdmin == true) ?
-                Role::with(self::$relations)->where('id', '<>', 1)->get() :
-                Role::with(self::$relations)->get();
-
+        if ($noAdmin != NULL && $noAdmin == true) {
+            
+            if (\Session::get('company_id') != NULL) {
+                
+                $roles = Role::with(self::$relations)->where('company_id', \Session::get('company_id'))->where('id', '<>', 1)->get();
+                
+            } else {
+                
+                $roles = Role::with(self::$relations)->where('id', '<>', 1)->get();
+                
+            }
+        } else {
+          
+            $roles = \Session::get('company_id') != NULL ? Role::with(self::$relations)->where('company_id', \Session::get('company_id'))->get() : Role::with(self::$relations)->get();
+        }
 
         return !empty($roles->toArray()) ? $roles : array("errors" => true, "messages" => ['No Roles Found']);
     }

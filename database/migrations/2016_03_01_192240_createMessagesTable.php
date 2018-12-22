@@ -19,8 +19,8 @@ class CreateMessagesTable extends Migration
             $table->integer('to_id')->unsigned();
             $table->text('text');
             $table->enum('seen',['0','1'])->default(0);
-            $table->datetime('sent_at');
-            $table->datetime('seen_at');
+            $table->datetime('sent_at')->nullable();
+            $table->datetime('seen_at')->nullable();
             $table->foreign('from_id')
                     ->references('id')
                     ->on('users')

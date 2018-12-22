@@ -40,13 +40,13 @@ Class UserTableSeeder extends Seeder {
         ]);
 
         $userAdmin = App\Modules\users\models\User::create([
-              
                     'username' => 'amr',
                     'email' => 'amr.gamal878@gmail.com',
                     'password' => \Hash::make('12345678'),
                     'token' => \Hash::make(\Illuminate\Support\Str::random(60)),
                     'display_name' => 'Amr Gamal',
                     'bio' => 'Web Developer',
+                    'company_id' => NULL,
         ]);
 
         $userGuest = App\Modules\users\models\User::create([
@@ -56,7 +56,7 @@ Class UserTableSeeder extends Seeder {
                     'token' => \Hash::make(\Illuminate\Support\Str::random(60)),
                     'display_name' => 'Guest User',
                     'bio' => 'Just A Stalker',
-                   
+                    'company_id' => $company->id,
         ]);
 
         $permission = \App\Modules\users\models\Permission::create([

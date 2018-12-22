@@ -32,13 +32,17 @@ class authToken {
             return \Response::json(array("messages" => ["You must send a user id"]), 401);
         }
 
-        $user = User::with('roles.permissions')->whereRaw('id = ? AND token = ? ', array($id, $token))->select("id")->get();
+        $user = User::with('roles.permissions')->whereRaw('id = ? AND token = ? ', array($id, $token))->select(["id","company_id"])->get();
 
         if (empty($user->toArray())) {
 
             return \Response::json(array("messages" => ["Invalid token"]), 401);
         } 
-        
+   
+        // tenant assign
+        if($user[0]->company_id != NULL) 
+           \Session::put('company_id',$user[0]->company_id);
+   
         return $next($request);
 
         
